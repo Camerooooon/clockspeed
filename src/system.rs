@@ -1,6 +1,7 @@
 use super::cpu::CPU;
 use super::Error;
 use crate::cpu::Speed;
+use crate::display::smooth_i32_vec;
 use regex::Regex;
 use std::fs::{read_dir, File};
 use std::io::Read;
@@ -12,7 +13,7 @@ pub fn check_cpu_freq() -> Result<i32, Error> {
     let mut count = 0;
     for cpu in list_cpus()? {
         count += 1;
-        total += cpu.cur_freq;
+        total += smooth_i32_vec(cpu.cur_freq,1);
     }
     Ok((total as f32 / count as f32) as i32)
 }
@@ -103,7 +104,8 @@ pub fn list_cpus() -> Result<Vec<CPU>, Error> {
             // Temporary initial values
             max_freq: 0,
             min_freq: 0,
-            cur_freq: 0,
+            exact_freq: 0,
+            cur_freq: vec![],
             cur_temp: 0,
             gov: "Unknown".to_string(),
         };
@@ -123,7 +125,7 @@ pub fn list_cpu_speeds() -> Result<Vec<i32>, Error> {
 
     for cpu in cpus {
         let speed = cpu.cur_freq;
-        speeds.push(speed)
+        speeds.push(smooth_i32_vec(speed, 3))
     }
     Ok(speeds)
 }
@@ -206,7 +208,7 @@ mod tests {
             assert!(x.max_freq > 0);
             assert!(x.min_freq > 0);
 
-            assert!(x.cur_freq> 0);
+            assert!(smooth_i32_vec(x.cur_freq, 3) > 0);
             assert!(x.cur_temp > 0);
 
             assert!(x.gov == "powersave" || x.gov == "performance");

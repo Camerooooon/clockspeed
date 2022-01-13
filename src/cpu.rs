@@ -28,7 +28,8 @@ pub struct CPU {
     pub name: String,
     pub max_freq: i32,
     pub min_freq: i32,
-    pub cur_freq: i32,
+    pub exact_freq: i32,
+    pub cur_freq: Vec<i32>,
     pub cur_temp: i32,
     pub gov: String,
 }
@@ -163,7 +164,9 @@ impl Speed for CPU {
 
     fn get_cur(&mut self) -> Result<(), Error> {
         let path = "cpufreq/scaling_cur_freq";
-        self.cur_freq = self.read_int(path.to_string())?;
+        let value = self.read_int(path.to_string())?;
+        self.exact_freq = value;
+        self.cur_freq.insert(0, value);
         Ok(())
     }
 

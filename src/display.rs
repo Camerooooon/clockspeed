@@ -54,12 +54,12 @@ pub fn print_available_governors(available_governors: Vec<String>, raw: bool) {
 pub fn print_cpus(cpus: Vec<CPU>, name: String, raw: bool) {
     if raw {
         for x in cpus {
-            println!("{} {}", x.name, x.cur_freq);
+            println!("{} {}", x.name, smooth_i32_vec(x.cur_freq, 3));
         }
     } else {
         println!("Name:{}", name);
         for x in cpus {
-            println!("{} is currently @ {} MHz", x.name, x.cur_freq / 1000);
+            println!("{} is currently @ {} MHz", x.name, smooth_i32_vec(x.cur_freq, 3) / 1000);
         }
     }
 }
@@ -73,6 +73,8 @@ pub fn print_cpu(cpu: &CPU) {
         temp_color = color::Fg(color::Yellow).to_string();
     }
 
+    let cur_freq = &cpu.cur_freq;
+
     println!(
         "{}{}:{} {}Hz\t{}Hz\t{}{}Hz{}\t{}C{}\t{}",
         style::Bold,
@@ -81,7 +83,7 @@ pub fn print_cpu(cpu: &CPU) {
         cpu.max_freq / 1000,
         cpu.min_freq / 1000,
         color::Fg(color::Green),
-        cpu.cur_freq / 1000,
+        smooth_i32_vec(cur_freq.to_vec(), 3) / 1000,
         temp_color,
         cpu.cur_temp / 1000,
         style::Reset,
@@ -99,4 +101,32 @@ pub fn print_cpu_temp(cpu_temp: Vec<i32>, raw: bool) {
 
 pub fn print_cpu_governors(cpu_governors: Vec<String>, raw: bool) {
     print_vec(cpu_governors, raw);
+}
+
+pub fn smooth_i32_vec(smooth: Vec<i32>, iterations: i8) -> i32 {
+
+    let mut total = 0;
+    let mut count = 0;
+    for i in 0..iterations {
+        let value = smooth.get(i as usize);
+        if value == None {
+            break;
+        }
+
+        total = total + *value.unwrap();
+        count = count + 1;
+    }
+    return total/count;
+
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn acs_smooth_test() {
+        let values = vec![69, 42, 10, 24, 124, 300, 1000000];
+        assert_eq!(smooth_i32_vec(values, 4), 36);
+    }
 }
